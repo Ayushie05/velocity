@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Velocity — Typing Speed Test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DESIGN TOKENS
+   Palette: deep indigo void + amber keylight + electric violet
+   Type: Space Grotesk (display) / Inter (UI) / JetBrains Mono (typing)
+   Signature: analog "keylight" speed gauge + glowing key-track input
+   ============================================================ */
+:root{
+  --void: #0a0c16;
+  --void-2: #0e1120;
+  --surface: #12162a;
+  --surface-2: #171c34;
+  --border: rgba(255,255,255,0.08);
+  --border-strong: rgba(255,255,255,0.14);
+  --text-primary: #eceefb;
+  --text-muted: #8a90b3;
+  --text-faint: #565c82;
+
+  --amber: #f0b429;
+  --amber-soft: #f7d372;
+  --violet: #7c6cf0;
+  --violet-soft: #a79bff;
+  --success: #34d399;
+  --error: #f87171;
+
+  --grad-brand: linear-gradient(135deg, var(--violet) 0%, var(--amber) 100%);
+  --grad-brand-soft: linear-gradient(135deg, rgba(124,108,240,0.18) 0%, rgba(240,180,41,0.18) 100%);
+
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --radius-sm: 10px;
+
+  --shadow-glow: 0 0 0 1px var(--border), 0 20px 60px -20px rgba(0,0,0,0.6);
+  --ease: cubic-bezier(.16,1,.3,1);
+}
+
+html.light{
+  --void: #f3f2fb;
+  --void-2: #ebe9f8;
+  --surface: #ffffff;
+  --surface-2: #f6f5fd;
+  --border: rgba(20,15,60,0.08);
+  --border-strong: rgba(20,15,60,0.14);
+  --text-primary: #16152b;
+  --text-muted: #5a5a78;
+  --text-faint: #9694b0;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  background: var(--void);
+  color: var(--text-primary);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+  overflow-x:hidden;
+  transition: background .4s var(--ease), color .4s var(--ease);
+  position:relative;
+}
+h1,h2,h3,.brand-font{font-family:'Space Grotesk',sans-serif;}
+.mono{font-family:'JetBrains Mono',monospace;}
+::selection{background: rgba(240,180,41,.35);}
+
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+button:focus-visible, a:focus-visible, [tabindex]:focus-visible{
+  outline:2px solid var(--amber);
+  outline-offset:3px;
+  border-radius:8px;
+}
+a{color:inherit;text-decoration:none;}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important;}
+}
+
+/* ---------- Ambient background ---------- */
+.bg-layer{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+.grid-pattern{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size:56px 56px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 20%, black 40%, transparent 90%);
+  opacity:.5;
+}
+.blob{position:absolute;border-radius:50%;filter:blur(90px);opacity:.35;will-change:transform;}
+.blob-1{width:520px;height:520px;background:var(--violet);top:-160px;left:-120px;animation:float1 22s ease-in-out infinite;}
+.blob-2{width:460px;height:460px;background:var(--amber);top:20%;right:-160px;animation:float2 26s ease-in-out infinite;}
+.blob-3{width:400px;height:400px;background:#4c3fd0;bottom:-140px;left:30%;animation:float3 24s ease-in-out infinite;}
+@keyframes float1{0%,100%{transform:translate(0,0)}50%{transform:translate(60px,80px)}}
+@keyframes float2{0%,100%{transform:translate(0,0)}50%{transform:translate(-70px,60px)}}
+@keyframes float3{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,-60px)}}
+
+#particles{position:absolute;inset:0;}
+.particle{position:absolute;border-radius:50%;background:var(--amber-soft);opacity:.5;animation:drift linear infinite;}
+@keyframes drift{
+  from{transform:translateY(0) translateX(0);opacity:0;}
+  10%{opacity:.6;}
+  90%{opacity:.6;}
+  to{transform:translateY(-100vh) translateX(20px);opacity:0;}
+}
+
+/* ---------- Layout shell ---------- */
+.shell{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:0 28px;}
+
+/* ---------- Navbar ---------- */
+.navbar{
+  position:sticky;top:0;z-index:50;
+  backdrop-filter:blur(16px) saturate(140%);
+  background:color-mix(in srgb, var(--void) 70%, transparent);
+  border-bottom:1px solid var(--border);
+}
+.nav-inner{max-width:1180px;margin:0 auto;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-mark{
+  width:36px;height:36px;border-radius:10px;
+  background:var(--grad-brand);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 24px rgba(124,108,240,.5);
+  font-weight:700;color:#0a0c16;font-size:16px;
+  flex-shrink:0;
+}
+.brand-name{font-weight:600;font-size:18px;letter-spacing:-0.01em;}
+.nav-actions{display:flex;align-items:center;gap:8px;}
+.icon-btn{
+  width:40px;height:40px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--text-muted);
+  transition:all .25s var(--ease);
+}
+.icon-btn:hover{color:var(--text-primary);border-color:var(--border-strong);transform:translateY(-1px);}
+.nav-link{
+  padding:9px 16px;border-radius:10px;font-size:14px;font-weight:500;
+  color:var(--text-muted);border:1px solid transparent;
+  transition:all .25s var(--ease);
+}
+.nav-link:hover{color:var(--text-primary);background:var(--surface);}
+
+/* ---------- Hero ---------- */
+.hero{padding:88px 0 64px;display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center;}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:6px 14px;border-radius:100px;
+  border:1px solid var(--border-strong);
+  background:var(--surface);
+  font-size:12.5px;font-weight:600;letter-spacing:.03em;color:var(--amber-soft);
+  margin-bottom:22px;
+  animation:fadeUp .7s var(--ease) both;
+}
+.eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 8px var(--success);animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+.hero h1{
+  font-size:clamp(38px, 5.2vw, 64px);
+  line-height:1.04; letter-spacing:-0.02em; font-weight:700;
+  margin-bottom:20px;
+  animation:fadeUp .7s .05s var(--ease) both;
+}
+.hero h1 .grad{
+  background:var(--grad-brand);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.hero p.sub{
+  font-size:17px;line-height:1.6;color:var(--text-muted);max-width:480px;margin-bottom:32px;
+  animation:fadeUp .7s .1s var(--ease) both;
+}
+.hero-actions{display:flex;gap:14px;align-items:center;animation:fadeUp .7s .15s var(--ease) both;}
+.btn-primary{
+  position:relative;overflow:hidden;
+  padding:15px 28px;border-radius:14px;
+  background:var(--grad-brand); color:#0a0c16;
+  font-weight:700;font-size:15px;
+  box-shadow:0 12px 32px -10px rgba(124,108,240,.55);
+  transition:transform .3s var(--ease), box-shadow .3s var(--ease);
+}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 16px 40px -8px rgba(240,180,41,.5);}
+.btn-primary:active{transform:translateY(0px) scale(.98);}
+.ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.5);transform:scale(0);animation:rippleAnim .6s ease-out;pointer-events:none;}
+@keyframes rippleAnim{to{transform:scale(3);opacity:0;}}
+
+.btn-ghost{
+  padding:14px 22px;border-radius:14px;border:1px solid var(--border-strong);
+  color:var(--text-primary);font-weight:600;font-size:15px;background:var(--surface);
+  transition:all .25s var(--ease);
+}
+.btn-ghost:hover{border-color:var(--violet-soft);transform:translateY(-2px);}
+
+.hero-visual{position:relative;height:380px;animation:fadeUp .8s .1s var(--ease) both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+
+/* keycap orbit illustration */
+.orbit-wrap{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;}
+.orbit-ring{position:absolute;border-radius:50%;border:1px dashed var(--border-strong);}
+.ring-1{width:300px;height:300px;animation:spin 26s linear infinite;}
+.ring-2{width:220px;height:220px;animation:spin 18s linear infinite reverse;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.core-dial{
+  width:180px;height:180px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.15), transparent 60%), var(--surface);
+  border:1px solid var(--border-strong);
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
+  box-shadow: 0 0 60px -10px rgba(124,108,240,.5), inset 0 0 30px rgba(255,255,255,.03);
+}
+.core-dial .num{font-family:'Space Grotesk';font-size:40px;font-weight:700;background:var(--grad-brand);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.core-dial .lbl{font-size:11px;color:var(--text-muted);letter-spacing:.1em;margin-top:2px;}
+.float-key{
+  position:absolute;width:46px;height:46px;border-radius:12px;
+  background:var(--surface); border:1px solid var(--border-strong);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono';font-size:14px;color:var(--text-muted);
+  box-shadow:0 8px 20px -6px rgba(0,0,0,.5);
+  animation:keyfloat 5s ease-in-out infinite;
+}
+@keyframes keyfloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-14px);}}
+.fk1{top:6%;left:8%;animation-delay:0s;}
+.fk2{top:14%;right:4%;animation-delay:.8s;}
+.fk3{bottom:10%;left:2%;animation-delay:1.6s;}
+.fk4{bottom:4%;right:14%;animation-delay:2.4s;}
+.fk5{top:50%;left:-4%;animation-delay:1.2s;}
+
+/* ---------- Glass card base ---------- */
+.glass-card{
+  background:linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-glow);
+  position:relative;
+}
+.glass-card::before{
+  content:'';position:absolute;inset:0;border-radius:inherit;padding:1px;
+  background:linear-gradient(135deg, rgba(255,255,255,.14), transparent 40%, rgba(240,180,41,.1));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  pointer-events:none;
+}
+
+/* ---------- Test section ---------- */
+.test-section{padding:20px 0 60px;}
+.test-card{padding:34px;animation:fadeUp .6s var(--ease) both;}
+
+.test-topbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:24px;}
+.timer-pill{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 18px;border-radius:100px;
+  background:var(--void-2);border:1px solid var(--border);
+}
+.timer-pill svg{color:var(--amber);}
+.timer-num{font-family:'JetBrains Mono';font-weight:700;font-size:20px;min-width:34px;text-align:center;}
+.streak-pill{
+  display:flex;align-items:center;gap:8px;padding:9px 16px;border-radius:100px;
+  background:var(--void-2);border:1px solid var(--border);font-size:13px;color:var(--text-muted);
+}
+.streak-pill b{color:var(--amber-soft);font-family:'JetBrains Mono';}
+.para-tag{
+  font-size:12px;padding:6px 12px;border-radius:100px;
+  border:1px solid var(--border);color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;
+}
+
+.progress-track{
+  height:6px;border-radius:100px;background:var(--void-2);
+  overflow:hidden;margin-bottom:26px;border:1px solid var(--border);
+}
+.progress-fill{
+  height:100%;width:0%;border-radius:100px;
+  background:var(--grad-brand);
+  transition:width 1s linear;
+  box-shadow:0 0 12px rgba(240,180,41,.5);
+}
+
+.type-zone{
+  position:relative;
+  background:var(--void-2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  padding:28px 30px;
+  min-height:150px;
+  cursor:text;
+  transition:border-color .3s var(--ease), box-shadow .3s var(--ease);
+}
+.type-zone.focused{border-color:var(--violet-soft); box-shadow:0 0 0 4px rgba(124,108,240,.12);}
+.type-zone.locked{opacity:.55;}
+.para-text{
+  font-family:'JetBrains Mono',monospace;
+  font-size:19px;line-height:1.85;
+  letter-spacing:.2px;
+  color:var(--text-faint);
+  user-select:none;
+}
+.para-text span{position:relative;border-radius:3px;padding:1px 0;}
+.ch-correct{color:var(--success);}
+.ch-incorrect{color:var(--error);background:rgba(248,113,113,.12);}
+.ch-current{color:var(--text-primary);}
+.ch-current::after{
+  content:'';position:absolute;left:0;right:0;bottom:-2px;height:2px;
+  background:var(--violet-soft);box-shadow:0 0 8px var(--violet-soft);
+  animation:blinkCursor 1s step-end infinite;
+}
+@keyframes blinkCursor{50%{opacity:.15;}}
+.word-active{background:rgba(124,108,240,.08);border-radius:5px;}
+
+.hidden-input{
+  position:absolute; opacity:0; width:1px; height:1px; pointer-events:none;
+}
+.start-overlay{
+  position:absolute;inset:0;border-radius:var(--radius-md);
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;
+  background:color-mix(in srgb, var(--void-2) 88%, transparent);
+  backdrop-filter:blur(4px);
+  z-index:5;
+}
+.start-overlay p{color:var(--text-muted);font-size:14px;}
+
+.stats-live{display:flex;gap:28px;margin-top:22px;flex-wrap:wrap;}
+.stat-live-item{display:flex;flex-direction:column;gap:2px;}
+.stat-live-item .val{font-family:'Space Grotesk';font-size:22px;font-weight:700;}
+.stat-live-item .lbl{font-size:11.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;}
+
+.test-footer{display:flex;align-items:center;justify-content:space-between;margin-top:26px;flex-wrap:wrap;gap:14px;}
+.hint{font-size:12.5px;color:var(--text-faint);}
+.hint kbd{
+  background:var(--void-2);border:1px solid var(--border-strong);border-radius:5px;
+  padding:2px 6px;font-family:'JetBrains Mono';font-size:11px;
+}
+.btn-restart{
+  display:flex;align-items:center;gap:8px;
+  padding:11px 20px;border-radius:12px;
+  background:var(--surface);border:1px solid var(--border-strong);
+  font-weight:600;font-size:13.5px;
+  transition:all .25s var(--ease);
+}
+.btn-restart:hover{border-color:var(--amber-soft);transform:translateY(-1px);}
+.btn-restart svg{transition:transform .5s var(--ease);}
+.btn-restart:hover svg{transform:rotate(180deg);}
+
+/* ---------- Graph ---------- */
+.graph-card{margin-top:20px;padding:22px 26px;}
+.graph-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.graph-head h3{font-size:14px;font-weight:600;color:var(--text-muted);}
+canvas#speedGraph{width:100%;height:110px;display:block;}
+
+/* ---------- Stat cards grid ---------- */
+.stats-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:20px;padding:10px 0 70px;
+}
+.stat-card{
+  padding:26px;position:relative;overflow:hidden;
+  transition:transform .35s var(--ease), border-color .35s var(--ease);
+}
+.stat-card:hover{transform:translateY(-6px);border-color:var(--border-strong);}
+.stat-card .glow{
+  position:absolute;top:-40%;right:-30%;width:140px;height:140px;border-radius:50%;
+  filter:blur(50px);opacity:.35;transition:opacity .35s;
+}
+.stat-card:hover .glow{opacity:.6;}
+.stat-icon{
+  width:44px;height:44px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:18px;
+  background:var(--grad-brand-soft);
+  border:1px solid var(--border);
+}
+.stat-card .value{font-family:'Space Grotesk';font-size:34px;font-weight:700;letter-spacing:-0.01em;margin-bottom:4px;}
+.stat-card .label{font-size:13px;color:var(--text-muted);font-weight:500;}
+
+/* ---------- About / footer ---------- */
+.about-section{padding:0 0 90px;}
+.about-card{padding:40px;display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;}
+.about-card h2{font-size:26px;margin-bottom:14px;}
+.about-card p{color:var(--text-muted);line-height:1.7;font-size:15px;}
+.feature-list{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.feature-list li{
+  list-style:none;display:flex;gap:10px;align-items:flex-start;
+  font-size:13.5px;color:var(--text-muted);padding:12px;
+  background:var(--void-2);border:1px solid var(--border);border-radius:12px;
+}
+.feature-list li svg{color:var(--success);flex-shrink:0;margin-top:1px;}
+
+footer{padding:32px 0 50px;text-align:center;color:var(--text-faint);font-size:13px;border-top:1px solid var(--border);}
+
+/* ---------- Modal ---------- */
+.modal-overlay{
+  position:fixed;inset:0;z-index:100;
+  background:rgba(4,5,12,.7);backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  opacity:0;pointer-events:none;transition:opacity .35s var(--ease);
+}
+.modal-overlay.show{opacity:1;pointer-events:all;}
+.modal-card{
+  width:100%;max-width:520px;padding:38px;border-radius:28px;
+  background:linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+  border:1px solid var(--border-strong);
+  box-shadow:0 40px 100px -20px rgba(0,0,0,.7);
+  transform:translateY(24px) scale(.96);opacity:0;
+  transition:all .45s var(--ease);
+  position:relative;overflow:hidden;
+}
+.modal-overlay.show .modal-card{transform:translateY(0) scale(1);opacity:1;}
+.modal-close{
+  position:absolute;top:20px;right:20px;
+  width:34px;height:34px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--text-muted);border:1px solid var(--border);background:var(--void-2);
+}
+.modal-close:hover{color:var(--text-primary);}
+.modal-head{text-align:center;margin-bottom:26px;}
+.rating-badge{
+  display:inline-block;padding:6px 16px;border-radius:100px;
+  font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  background:var(--grad-brand-soft);color:var(--amber-soft);border:1px solid var(--border);
+  margin-bottom:14px;
+}
+.modal-head h2{font-size:24px;}
+
+.gauge-wrap{display:flex;justify-content:center;margin-bottom:28px;position:relative;}
+.gauge-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
+.gauge-center .wpm-big{font-family:'Space Grotesk';font-size:42px;font-weight:700;}
+.gauge-center .wpm-sub{font-size:11px;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;}
+
+.result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px;}
+.result-item{
+  text-align:center;padding:16px 8px;border-radius:14px;
+  background:var(--void-2);border:1px solid var(--border);
+}
+.result-item .rv{font-family:'Space Grotesk';font-size:20px;font-weight:700;}
+.result-item .rl{font-size:11px;color:var(--text-muted);margin-top:4px;}
+
+.modal-actions{display:flex;gap:12px;}
+.modal-actions .btn-primary, .modal-actions .btn-ghost{flex:1;text-align:center;justify-content:center;display:flex;align-items:center;}
+
+#confettiCanvas{position:fixed;inset:0;z-index:110;pointer-events:none;}
+
+/* ---------- Toast ---------- */
+.toast{
+  position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--surface);border:1px solid var(--border-strong);
+  padding:12px 20px;border-radius:12px;font-size:13.5px;
+  box-shadow:0 20px 50px -15px rgba(0,0,0,.6);
+  opacity:0;pointer-events:none;transition:all .4s var(--ease);z-index:120;
+  display:flex;align-items:center;gap:10px;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast svg{color:var(--amber);}
+
+/* ---------- Responsive ---------- */
+@media (max-width:960px){
+  .hero{grid-template-columns:1fr;padding-top:60px;}
+  .hero-visual{height:260px;order:-1;}
+  .stats-grid{grid-template-columns:repeat(2,1fr);}
+  .about-card{grid-template-columns:1fr;}
+}
+@media (max-width:640px){
+  .nav-link{display:none;}
+  .stats-grid{grid-template-columns:1fr 1fr;gap:12px;}
+  .test-card{padding:22px;}
+  .para-text{font-size:16px;line-height:1.75;}
+  .result-grid{grid-template-columns:1fr 1fr;}
+  .stats-live{gap:18px;}
+  .hero h1{font-size:34px;}
+  .feature-list{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-layer">
+  <div class="grid-pattern"></div>
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+  <div id="particles"></div>
+</div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="nav-inner">
+    <div class="brand">
+      <div class="brand-mark">V</div>
+      <span class="brand-name">Velocity</span>
+    </div>
+    <div class="nav-actions">
+      <a href="#about" class="nav-link">About</a>
+      <button class="icon-btn" id="soundToggle" aria-label="Toggle sound" title="Toggle sound">
+        <svg id="soundIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
+      </button>
+      <button class="icon-btn" id="fullscreenToggle" aria-label="Toggle fullscreen" title="Fullscreen">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+      </button>
+      <button class="icon-btn" id="themeToggle" aria-label="Toggle dark mode" title="Dark / light mode">
+        <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<div class="shell">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div>
+      <div class="eyebrow"><span class="dot"></span> Best score saved locally · no sign-up needed</div>
+      <h1>Type faster.<br>Type <span class="grad">sharper.</span></h1>
+      <p class="sub">Improve your typing speed, accuracy, and consistency with a beautiful modern experience — built for focus, not friction.</p>
+      <div class="hero-actions">
+        <button class="btn-primary" id="heroStartBtn">Start Test</button>
+        <a href="#about" class="btn-ghost">Learn more</a>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="orbit-wrap">
+        <div class="orbit-ring ring-1"></div>
+        <div class="orbit-ring ring-2"></div>
+        <div class="core-dial">
+          <div class="num" id="heroBestWpm">0</div>
+          <div class="lbl">BEST WPM</div>
+        </div>
+        <div class="float-key fk1">a</div>
+        <div class="float-key fk2">→</div>
+        <div class="float-key fk3">⇧</div>
+        <div class="float-key fk4">z</div>
+        <div class="float-key fk5">#</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TEST CARD -->
+  <section class="test-section" id="testSection">
+    <div class="glass-card test-card">
+      <div class="test-topbar">
+        <div class="timer-pill">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          <span class="timer-num mono" id="timerDisplay">60</span>
+        </div>
+        <div class="streak-pill">Streak <b id="streakVal">0</b></div>
+        <span class="para-tag" id="paraTopic">technology</span>
+      </div>
+
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+      <div class="type-zone" id="typeZone" tabindex="0">
+        <p class="para-text mono" id="paraText"></p>
+        <div class="start-overlay" id="startOverlay">
+          <button class="btn-primary" id="startTestBtn">Start Test</button>
+          <p>or just start typing to begin</p>
+        </div>
+        <textarea class="hidden-input" id="hiddenInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+      </div>
+
+      <div class="stats-live">
+        <div class="stat-live-item"><span class="val mono" id="liveWpm">0</span><span class="lbl">WPM</span></div>
+        <div class="stat-live-item"><span class="val mono" id="liveAcc">100%</span><span class="lbl">Accuracy</span></div>
+        <div class="stat-live-item"><span class="val mono" id="liveMistakes">0</span><span class="lbl">Mistakes</span></div>
+        <div class="stat-live-item"><span class="val mono" id="liveChars">0</span><span class="lbl">Characters</span></div>
+      </div>
+
+      <div class="test-footer">
+        <span class="hint">Press <kbd>Ctrl</kbd> + <kbd>R</kbd> to restart · click the text to focus</span>
+        <button class="btn-restart" id="restartBtn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+          Restart
+        </button>
+      </div>
+    </div>
+
+    <div class="glass-card graph-card">
+      <div class="graph-head">
+        <h3>LIVE SPEED</h3>
+        <span class="hint" id="graphHint">Start typing to see your pace</span>
+      </div>
+      <canvas id="speedGraph"></canvas>
+    </div>
+  </section>
+
+  <!-- STATS GRID -->
+  <section class="stats-grid">
+    <div class="glass-card stat-card">
+      <div class="glow" style="background:var(--violet)"></div>
+      <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--violet-soft)" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"></path></svg></div>
+      <div class="value" id="cardWpm">0</div>
+      <div class="label">Words Per Minute</div>
+    </div>
+    <div class="glass-card stat-card">
+      <div class="glow" style="background:var(--success)"></div>
+      <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div>
+      <div class="value" id="cardAcc">100%</div>
+      <div class="label">Accuracy</div>
+    </div>
+    <div class="glass-card stat-card">
+      <div class="glow" style="background:var(--error)"></div>
+      <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--error)" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg></div>
+      <div class="value" id="cardMistakes">0</div>
+      <div class="label">Mistakes</div>
+    </div>
+    <div class="glass-card stat-card">
+      <div class="glow" style="background:var(--amber)"></div>
+      <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg></div>
+      <div class="value" id="cardChars">0</div>
+      <div class="label">Characters Typed</div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section class="about-section" id="about">
+    <div class="glass-card about-card">
+      <div>
+        <h2>Built for people who care about their craft.</h2>
+        <p>Velocity is a distraction-free typing test that measures the numbers that actually matter — real words per minute, true accuracy, and where your mistakes happen. No accounts, no servers, nothing leaves your browser. Your best score simply lives on this device.</p>
+      </div>
+      <ul class="feature-list">
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> 30+ curated paragraphs</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Live speed graph</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Sound feedback</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Best score memory</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Keyboard shortcuts</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Fully responsive</li>
+      </ul>
+    </div>
+  </section>
+
+</div>
+
+<footer>Made by Team A — Parsaniya Drashti · Bhadaniya Ayushi · Dedakiya Krishna. Runs 100% in your browser.</footer>
+
+<!-- RESULT MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-card">
+    <button class="modal-close" id="modalClose" aria-label="Close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+    <div class="modal-head">
+      <div class="rating-badge" id="ratingBadge">Good</div>
+      <h2>Test Complete</h2>
+    </div>
+    <div class="gauge-wrap">
+      <svg width="200" height="200" viewBox="0 0 200 200">
+        <circle cx="100" cy="100" r="86" fill="none" stroke="var(--border)" stroke-width="12"></circle>
+        <circle id="gaugeCircle" cx="100" cy="100" r="86" fill="none" stroke="url(#gaugeGrad)" stroke-width="12" stroke-linecap="round" stroke-dasharray="540" stroke-dashoffset="540" transform="rotate(-90 100 100)"></circle>
+        <defs>
+          <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="var(--violet)"/>
+            <stop offset="100%" stop-color="var(--amber)"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div class="gauge-center">
+        <div class="wpm-big mono" id="modalWpm">0</div>
+        <div class="wpm-sub">WPM</div>
+      </div>
+    </div>
+    <div class="result-grid">
+      <div class="result-item"><div class="rv" id="modalAcc">0%</div><div class="rl">Accuracy</div></div>
+      <div class="result-item"><div class="rv" id="modalMistakes">0</div><div class="rl">Mistakes</div></div>
+      <div class="result-item"><div class="rv" id="modalChars">0</div><div class="rl">Characters</div></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="modalCloseBtn">Close</button>
+      <button class="btn-primary" id="modalRestartBtn">Restart Test</button>
+    </div>
+  </div>
+</div>
+
+<canvas id="confettiCanvas"></canvas>
+
+<div class="toast" id="toast"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"></path></svg><span id="toastMsg">New best score!</span></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   PARAGRAPH BANK — 30+ curated paragraphs
+   ============================================================ */
+const PARAGRAPHS = [
+  {topic:"technology", text:"Modern technology has quietly rewired the way we work, learn, and connect with one another. Devices that once filled entire rooms now fit inside a pocket, yet they carry more computing power than the systems that guided early space missions. The pace of change keeps accelerating, and staying curious is the only way to keep up."},
+  {topic:"science", text:"Every great scientific discovery begins with a simple question that refuses to be ignored. Researchers spend years testing hypotheses, discarding failed theories, and slowly building evidence until a clearer picture emerges. Progress is rarely a straight line, but each careful experiment moves human understanding a little further forward."},
+  {topic:"education", text:"A great education does more than transfer facts from one mind to another. It teaches people how to ask better questions, how to sit with uncertainty, and how to keep learning long after the classroom door has closed. The best teachers spark curiosity that lasts a lifetime."},
+  {topic:"space", text:"Beyond our thin blue atmosphere lies a silent expanse scattered with stars, some of which burned out long before humans existed. Telescopes now capture light that has traveled for billions of years, letting us peer into the early universe and imagine worlds we may never visit."},
+  {topic:"ai", text:"Artificial intelligence has moved from science fiction into daily life faster than most people expected. Algorithms now help doctors read scans, help drivers avoid collisions, and help students practice new languages. The technology still has limits, and understanding those limits is just as important as celebrating its strengths."},
+  {topic:"nature", text:"Forests breathe in a slow, patient rhythm that has continued for thousands of years, largely undisturbed by the pace of human ambition. Every fallen leaf feeds the soil, every root anchors the land, and every quiet stream carries nutrients to places far beyond where it began."},
+  {topic:"innovation", text:"Innovation rarely arrives as a single flash of brilliance. It usually grows from small, unglamorous improvements made by people willing to fail in private before succeeding in public. The most transformative ideas often look obvious in hindsight, but only after someone dared to try them first."},
+  {topic:"coding", text:"Writing clean code is less about clever tricks and more about clear thinking. A well named variable, a simple function, and a thoughtful comment can save future developers hours of confusion. Good programmers write for humans first, remembering that computers rarely complain about messy logic."},
+  {topic:"business", text:"Building a lasting business requires more patience than most founders expect when they start. Early excitement fades quickly once real customers arrive with real problems. The companies that survive tend to be the ones that listen carefully, adapt quickly, and never stop refining their product."},
+  {topic:"productivity", text:"True productivity is rarely about doing more things at once. It is about protecting focused time, removing unnecessary distractions, and choosing the few tasks that actually move important work forward. A calm, deliberate schedule almost always outperforms a frantic, overloaded one."},
+  {topic:"technology", text:"The rise of cloud computing changed how software gets built and delivered around the world. Small teams can now launch products that once required massive data centers and enormous budgets. This shift lowered the barrier to entry and let countless new ideas reach users almost overnight."},
+  {topic:"science", text:"Climate scientists rely on decades of collected data to understand how the planet is changing over time. Ice cores, ocean temperatures, and satellite images all tell overlapping parts of the same story. Piecing that story together requires patience, collaboration, and a healthy respect for uncertainty."},
+  {topic:"space", text:"Rockets leaving the launch pad must fight against gravity with astonishing amounts of controlled energy. Every gram of unnecessary weight is questioned, every system tested repeatedly, because even a tiny failure at high speed can end a mission in seconds. Precision is not optional in spaceflight."},
+  {topic:"ai", text:"Training a large language model requires vast amounts of text, significant computing power, and careful evaluation to catch mistakes before they reach real users. Engineers spend enormous effort making these systems more accurate, more helpful, and more aware of the situations where they should stay silent."},
+  {topic:"nature", text:"Coral reefs support an extraordinary share of ocean life despite covering only a small fraction of the seafloor. These fragile ecosystems depend on delicate temperature balances, and even small shifts in water conditions can trigger widespread bleaching that takes years, sometimes decades, to recover from."},
+  {topic:"innovation", text:"Some of history's most useful inventions came from people solving a personal frustration rather than chasing a grand vision. A broken tool, a wasted afternoon, or a repetitive chore has inspired countless breakthroughs. Necessity remains one of the most reliable engines of creative progress."},
+  {topic:"coding", text:"Debugging is often less about fixing a mistake and more about understanding why the mistake felt reasonable in the first place. Skilled developers slow down, read error messages carefully, and resist the urge to guess randomly. Patience during debugging usually saves far more time than it costs."},
+  {topic:"business", text:"Customer feedback, even when uncomfortable to hear, is one of the most valuable assets a growing company can collect. Complaints reveal friction points that internal teams often miss simply because they know the product too well. Listening carefully turns frustration into a roadmap for improvement."},
+  {topic:"productivity", text:"Multitasking often feels efficient in the moment but tends to slow overall progress once the mental cost of switching tasks is counted. Focused, single tasked work sessions consistently produce better results than constant context switching, even when the total hours spent look identical on paper."},
+  {topic:"education", text:"Curiosity driven learning tends to stick with people far longer than material memorized purely for a test. When students connect new information to something they genuinely care about, the knowledge becomes part of how they think rather than a fact they will forget the following week."},
+  {topic:"technology", text:"Wearable devices now track sleep, heart rate, and daily movement with a level of detail that would have seemed impossible only two decades ago. This constant stream of personal data offers useful insight, but it also raises real questions about privacy, ownership, and how that information gets used."},
+  {topic:"science", text:"Vaccines work by teaching the immune system to recognize a threat before the body ever encounters the real disease. This early preparation allows the immune response to act faster and more effectively, often preventing serious illness entirely. The underlying science took decades of careful research to refine."},
+  {topic:"space", text:"Astronauts aboard orbiting stations experience sunrise and sunset roughly every ninety minutes as they circle the planet at incredible speed. Living in microgravity reshapes daily routines completely, turning ordinary tasks like eating, sleeping, and exercising into carefully engineered challenges."},
+  {topic:"ai", text:"Machine learning models improve by studying patterns in data rather than following instructions written line by line. This approach makes them powerful at recognizing images, translating language, and predicting trends, but it also makes their reasoning harder to fully explain in simple human terms."},
+  {topic:"nature", text:"Migratory birds travel thousands of miles each year, guided by an internal sense that scientists still do not fully understand. Some rely on the position of the sun, others on the pull of the earth's magnetic field, navigating routes passed down across countless generations."},
+  {topic:"innovation", text:"Prototyping quickly and testing ideas early usually beats months of careful planning without any real feedback. Teams that build rough versions of their idea learn what actually works far sooner than teams that wait for a perfect plan before taking the first real step forward."},
+  {topic:"coding", text:"Version control systems let developers experiment freely without fear of permanently breaking their project. Every change is tracked, every mistake can be undone, and multiple people can work on the same codebase without stepping on each other's progress. It quietly makes modern software development possible."},
+  {topic:"business", text:"Pricing a product correctly is part art and part science, balancing what customers are willing to pay against what it actually costs to deliver value. Set the price too high and growth stalls, set it too low and the business slowly starves despite looking busy."},
+  {topic:"productivity", text:"Small, consistent habits tend to outperform occasional bursts of intense effort when it comes to long term progress. Showing up regularly, even for short sessions, builds momentum that a single marathon effort rarely matches. Consistency quietly compounds into results over weeks and months."},
+  {topic:"education", text:"Mistakes made while learning are not failures, they are simply data points that show where understanding still needs to grow. Students who feel safe making mistakes tend to take more intellectual risks, and those risks are often exactly what leads to genuine breakthroughs in understanding."},
+  {topic:"technology", text:"Open source software allows developers around the world to build on each other's work instead of starting from zero every time. This shared foundation has quietly powered much of the modern internet, from web servers to programming languages, often without most users ever noticing it exists."},
+  {topic:"space", text:"Mars remains one of the most studied planets beyond Earth, largely because its dusty red surface hints at a wetter, warmer past. Rovers slowly crawl across ancient riverbeds, drilling into rock layers that may hold clues about whether life ever existed there."}
+];
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const TEST_DURATION = 60;
+let state = {
+  text: "",
+  chars: [], // {char, status: 'pending'|'correct'|'incorrect'}
+  pos: 0,
+  timeLeft: TEST_DURATION,
+  running: false,
+  started: false,
+  timerId: null,
+  mistakes: 0,
+  totalTyped: 0,
+  startTime: null,
+  streak: 0,
+  bestStreak: 0,
+  wpmSamples: [], // {t, wpm}
+  soundOn: true
+};
+
+/* ============================================================
+   DOM refs
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const paraTextEl = $('paraText');
+const paraTopicEl = $('paraTopic');
+const typeZone = $('typeZone');
+const hiddenInput = $('hiddenInput');
+const startOverlay = $('startOverlay');
+const timerDisplay = $('timerDisplay');
+const progressFill = $('progressFill');
+const streakVal = $('streakVal');
+const liveWpm = $('liveWpm'), liveAcc = $('liveAcc'), liveMistakes = $('liveMistakes'), liveChars = $('liveChars');
+const cardWpm = $('cardWpm'), cardAcc = $('cardAcc'), cardMistakes = $('cardMistakes'), cardChars = $('cardChars');
+const modalOverlay = $('modalOverlay');
+
+/* ============================================================
+   SOUND ENGINE (Web Audio API, no external files)
+   ============================================================ */
+let audioCtx = null;
+function ctx(){ if(!audioCtx){ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); } return audioCtx; }
+function beep(freq, duration, type='sine', gainVal=0.05){
+  if(!state.soundOn) return;
+  try{
+    const ac = ctx();
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(gainVal, ac.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
+    osc.connect(gain); gain.connect(ac.destination);
+    osc.start(); osc.stop(ac.currentTime + duration);
+  }catch(e){/* audio not available */}
+}
+const sound = {
+  correct: () => beep(720, 0.05, 'sine', 0.035),
+  wrong: () => beep(160, 0.12, 'sawtooth', 0.05),
+  tick: () => beep(440, 0.03, 'square', 0.015),
+  finish: () => { beep(523,0.15,'sine',0.05); setTimeout(()=>beep(659,0.15,'sine',0.05),120); setTimeout(()=>beep(784,0.25,'sine',0.06),240); },
+  click: () => beep(300, 0.04, 'triangle', 0.03)
+};
+
+/* ============================================================
+   PARTICLES
+   ============================================================ */
+function spawnParticles(){
+  const container = $('particles');
+  const count = window.innerWidth < 640 ? 14 : 26;
+  for(let i=0;i<count;i++){
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = 2 + Math.random()*3;
+    p.style.width = size+'px'; p.style.height = size+'px';
+    p.style.left = Math.random()*100+'%';
+    p.style.bottom = '-10px';
+    p.style.animationDuration = (10 + Math.random()*14)+'s';
+    p.style.animationDelay = (Math.random()*14)+'s';
+    container.appendChild(p);
+  }
+}
+spawnParticles();
+
+/* ============================================================
+   PARAGRAPH RENDER
+   ============================================================ */
+function pickParagraph(){
+  const p = PARAGRAPHS[Math.floor(Math.random()*PARAGRAPHS.length)];
+  return p;
+}
+
+function loadParagraph(){
+  const p = pickParagraph();
+  state.text = p.text;
+  paraTopicEl.textContent = p.topic;
+  state.chars = p.text.split('').map(c => ({char:c, status:'pending'}));
+  state.pos = 0;
+  renderParagraph();
+}
+
+function findWordBounds(pos){
+  let start = pos, end = pos;
+  while(start > 0 && state.text[start-1] !== ' ') start--;
+  while(end < state.text.length && state.text[end] !== ' ') end++;
+  return [start, end];
+}
+
+function renderParagraph(){
+  const [wStart, wEnd] = findWordBounds(Math.min(state.pos, state.text.length-1));
+  let html = '';
+  for(let i=0;i<state.chars.length;i++){
+    const c = state.chars[i];
+    let cls = '';
+    if(c.status === 'correct') cls = 'ch-correct';
+    else if(c.status === 'incorrect') cls = 'ch-incorrect';
+    if(i === state.pos) cls += ' ch-current';
+    else if(i >= wStart && i < wEnd && state.pos < state.text.length) cls += ' word-active';
+    const displayChar = c.char === ' ' ? '&nbsp;' : escapeHtml(c.char);
+    html += `<span class="${cls.trim()}">${displayChar}</span>`;
+  }
+  paraTextEl.innerHTML = html;
+}
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ============================================================
+   TIMER
+   ============================================================ */
+function startTimer(){
+  state.startTime = Date.now();
+  state.timerId = setInterval(()=>{
+    state.timeLeft--;
+    timerDisplay.textContent = state.timeLeft;
+    const pct = ((TEST_DURATION - state.timeLeft) / TEST_DURATION) * 100;
+    progressFill.style.width = pct + '%';
+    if(state.timeLeft <= 10 && state.timeLeft > 0) sound.tick();
+    sampleWpm();
+    if(state.timeLeft <= 0){
+      finishTest();
+    }
+  }, 1000);
+}
+
+function sampleWpm(){
+  const elapsedMin = (Date.now() - state.startTime) / 60000;
+  const wpm = elapsedMin > 0 ? calcWpm(elapsedMin) : 0;
+  state.wpmSamples.push({t: TEST_DURATION - state.timeLeft, wpm});
+  drawGraph();
+}
+
+/* ============================================================
+   TYPING LOGIC
+   ============================================================ */
+function beginTestIfNeeded(){
+  if(state.started) return;
+  state.started = true;
+  state.running = true;
+  startOverlay.style.display = 'none';
+  typeZone.classList.add('focused');
+  startTimer();
+}
+
+function handleKeydown(e){
+  if(e.ctrlKey && (e.key === 'r' || e.key === 'R')){
+    e.preventDefault();
+    restartTest();
+    return;
+  }
+  if(!state.running && state.timeLeft <= 0) return; // locked after finish
+
+  if(e.key === 'Backspace'){
+    e.preventDefault();
+    if(state.pos > 0){
+      state.pos--;
+      // do not decrement mistakes retroactively; mistakes are cumulative
+      state.chars[state.pos].status = 'pending';
+      renderParagraph();
+    }
+    return;
+  }
+
+  if(e.key.length !== 1) return; // ignore Shift, Ctrl, Arrow keys etc
+  e.preventDefault();
+
+  beginTestIfNeeded();
+  if(state.pos >= state.chars.length) return;
+
+  const expected = state.chars[state.pos].char;
+  const typed = e.key;
+  state.totalTyped++;
+
+  if(typed === expected){
+    state.chars[state.pos].status = 'correct';
+    state.streak++;
+    if(state.streak > state.bestStreak) state.bestStreak = state.streak;
+    sound.correct();
+  } else {
+    state.chars[state.pos].status = 'incorrect';
+    state.mistakes++;
+    state.streak = 0;
+    sound.wrong();
+    typeZone.animate([{transform:'translateX(0)'},{transform:'translateX(-4px)'},{transform:'translateX(4px)'},{transform:'translateX(0)'}], {duration:180});
+  }
+  state.pos++;
+  streakVal.textContent = state.streak;
+  updateLiveStats();
+  renderParagraph();
+
+  if(state.pos >= state.chars.length){
+    finishTest();
+  }
+}
+
+function calcWpm(minutes){
+  // Standard: correct characters / 5 / minutes elapsed, counting only completed correct words
+  if(!minutes || minutes <= 0) return 0;
+  let correctChars = 0;
+  // count correct chars belonging to fully completed words (ignore unfinished trailing word)
+  const [wStart] = findWordBounds(Math.min(state.pos, state.text.length-1));
+  const boundary = state.pos < state.text.length ? wStart : state.pos; // exclude in-progress word
+  for(let i=0;i<boundary;i++){
+    if(state.chars[i].status === 'correct') correctChars++;
+  }
+  const words = correctChars / 5;
+  return Math.round(words / minutes);
+}
+
+function calcAccuracy(){
+  if(state.totalTyped === 0) return 100;
+  const correct = state.totalTyped - state.mistakes;
+  return Math.max(0, Math.round((correct / state.totalTyped) * 100));
+}
+
+function updateLiveStats(){
+  const minutes = state.startTime ? (Date.now() - state.startTime) / 60000 : 0;
+  const wpm = calcWpm(minutes || (1/60));
+  const acc = calcAccuracy();
+  animateNumber(liveWpm, wpm);
+  liveAcc.textContent = acc + '%';
+  liveMistakes.textContent = state.mistakes;
+  liveChars.textContent = state.totalTyped;
+}
+
+function animateNumber(el, target){
+  el.textContent = target;
+}
+
+/* ============================================================
+   GRAPH
+   ============================================================ */
+const graphCanvas = $('speedGraph');
+const gctx = graphCanvas.getContext('2d');
+function resizeGraph(){
+  const rect = graphCanvas.getBoundingClientRect();
+  graphCanvas.width = rect.width * devicePixelRatio;
+  graphCanvas.height = rect.height * devicePixelRatio;
+  gctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+}
+function drawGraph(){
+  resizeGraph();
+  const w = graphCanvas.clientWidth, h = graphCanvas.clientHeight;
+  gctx.clearRect(0,0,w,h);
+  if(state.wpmSamples.length < 2){
+    gctx.fillStyle = 'rgba(255,255,255,0.15)';
+    gctx.font = '12px Inter';
+    return;
+  }
+  const maxWpm = Math.max(...state.wpmSamples.map(s=>s.wpm), 20);
+  const stepX = w / (TEST_DURATION);
+  gctx.beginPath();
+  const grad = gctx.createLinearGradient(0,0,w,0);
+  grad.addColorStop(0, '#7c6cf0');
+  grad.addColorStop(1, '#f0b429');
+  gctx.strokeStyle = grad;
+  gctx.lineWidth = 2.5;
+  gctx.lineJoin = 'round';
+  state.wpmSamples.forEach((s, i)=>{
+    const x = s.t * stepX;
+    const y = h - (s.wpm / maxWpm) * (h - 10) - 5;
+    if(i===0) gctx.moveTo(x,y); else gctx.lineTo(x,y);
+  });
+  gctx.stroke();
+  // fill under curve
+  gctx.lineTo(state.wpmSamples[state.wpmSamples.length-1].t*stepX, h);
+  gctx.lineTo(0, h);
+  gctx.closePath();
+  const fillGrad = gctx.createLinearGradient(0,0,0,h);
+  fillGrad.addColorStop(0, 'rgba(124,108,240,0.25)');
+  fillGrad.addColorStop(1, 'rgba(124,108,240,0)');
+  gctx.fillStyle = fillGrad;
+  gctx.fill();
+  $('graphHint').textContent = `Peak ${Math.round(maxWpm)} WPM`;
+}
+window.addEventListener('resize', drawGraph);
+
+/* ============================================================
+   FINISH TEST + RESULTS
+   ============================================================ */
+function finishTest(){
+  clearInterval(state.timerId);
+  state.running = false;
+  typeZone.classList.add('locked');
+  typeZone.classList.remove('focused');
+
+  const minutes = TEST_DURATION / 60;
+  const finalWpm = calcWpm((Date.now() - state.startTime)/60000 || minutes);
+  const finalAcc = calcAccuracy();
+  const finalMistakes = state.mistakes;
+  const finalChars = state.totalTyped;
+
+  cardWpm.textContent = finalWpm;
+  cardAcc.textContent = finalAcc + '%';
+  cardMistakes.textContent = finalMistakes;
+  cardChars.textContent = finalChars;
+
+  sound.finish();
+  showResultModal(finalWpm, finalAcc, finalMistakes, finalChars);
+  checkBestScore(finalWpm);
+}
+
+function ratingFor(wpm, acc){
+  if(wpm >= 80 && acc >= 90) return 'Amazing';
+  if(wpm >= 55 && acc >= 85) return 'Excellent';
+  if(wpm >= 30) return 'Good';
+  return 'Needs Practice';
+}
+
+function showResultModal(wpm, acc, mistakes, chars){
+  $('modalWpm').textContent = wpm;
+  $('modalAcc').textContent = acc + '%';
+  $('modalMistakes').textContent = mistakes;
+  $('modalChars').textContent = chars;
+  const rating = ratingFor(wpm, acc);
+  $('ratingBadge').textContent = rating;
+
+  const circle = $('gaugeCircle');
+  const circumference = 540;
+  const pct = Math.min(wpm/120, 1); // scale gauge to 120 wpm max
+  requestAnimationFrame(()=>{
+    circle.style.transition = 'stroke-dashoffset 1.2s cubic-bezier(.16,1,.3,1)';
+    circle.style.strokeDashoffset = circumference - (circumference * pct);
+  });
+
+  modalOverlay.classList.add('show');
+  if(acc > 95) launchConfetti();
+}
+
+function closeModal(){
+  modalOverlay.classList.remove('show');
+  $('gaugeCircle').style.strokeDashoffset = 540;
+}
+
+function checkBestScore(wpm){
+  const best = parseInt(localStorage.getItem('velocity_best_wpm') || '0', 10);
+  if(wpm > best){
+    localStorage.setItem('velocity_best_wpm', wpm);
+    $('heroBestWpm').textContent = wpm;
+    showToast('New best score: ' + wpm + ' WPM!');
+  }
+}
+
+function showToast(msg){
+  $('toastMsg').textContent = msg;
+  const t = $('toast');
+  t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 3200);
+}
+
+/* ============================================================
+   CONFETTI
+   ============================================================ */
+const confettiCanvas = $('confettiCanvas');
+const cctx = confettiCanvas.getContext('2d');
+function launchConfetti(){
+  confettiCanvas.width = window.innerWidth;
+  confettiCanvas.height = window.innerHeight;
+  const colors = ['#7c6cf0','#f0b429','#34d399','#f7d372','#a79bff'];
+  const pieces = Array.from({length:120}, ()=>({
+    x: Math.random()*confettiCanvas.width,
+    y: -20 - Math.random()*200,
+    r: 4 + Math.random()*5,
+    c: colors[Math.floor(Math.random()*colors.length)],
+    vy: 2 + Math.random()*3,
+    vx: -1.5 + Math.random()*3,
+    rot: Math.random()*360,
+    vr: -6 + Math.random()*12
+  }));
+  let frame = 0;
+  function tick(){
+    frame++;
+    cctx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+    pieces.forEach(p=>{
+      p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+      cctx.save();
+      cctx.translate(p.x, p.y);
+      cctx.rotate(p.rot * Math.PI/180);
+      cctx.fillStyle = p.c;
+      cctx.fillRect(-p.r/2, -p.r/2, p.r, p.r*0.6);
+      cctx.restore();
+    });
+    if(frame < 160){
+      requestAnimationFrame(tick);
+    } else {
+      cctx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+    }
+  }
+  tick();
+}
+
+/* ============================================================
+   RESTART
+   ============================================================ */
+function restartTest(){
+  clearInterval(state.timerId);
+  state = {
+    text:"", chars:[], pos:0, timeLeft: TEST_DURATION, running:false, started:false,
+    timerId:null, mistakes:0, totalTyped:0, startTime:null, streak:0, bestStreak:0,
+    wpmSamples:[], soundOn: state.soundOn
+  };
+  timerDisplay.textContent = TEST_DURATION;
+  progressFill.style.width = '0%';
+  streakVal.textContent = '0';
+  liveWpm.textContent = '0'; liveAcc.textContent = '100%'; liveMistakes.textContent = '0'; liveChars.textContent = '0';
+  typeZone.classList.remove('locked');
+  startOverlay.style.display = 'flex';
+  closeModal();
+  loadParagraph();
+  gctx.clearRect(0,0,graphCanvas.width, graphCanvas.height);
+  $('graphHint').textContent = 'Start typing to see your pace';
+  hiddenInput.value = '';
+  hiddenInput.focus();
+}
+
+/* ============================================================
+   EVENT WIRING
+   ============================================================ */
+typeZone.addEventListener('click', ()=> hiddenInput.focus());
+hiddenInput.addEventListener('keydown', handleKeydown);
+hiddenInput.addEventListener('blur', ()=> typeZone.classList.remove('focused'));
+hiddenInput.addEventListener('focus', ()=> { if(state.started) typeZone.classList.add('focused'); });
+
+document.addEventListener('keydown', (e)=>{
+  if(e.ctrlKey && (e.key==='r'||e.key==='R')){
+    e.preventDefault();
+    restartTest();
+  }
+});
+
+$('startTestBtn').addEventListener('click', (e)=>{
+  createRipple(e);
+  sound.click();
+  hiddenInput.focus();
+  beginTestIfNeeded();
+});
+$('heroStartBtn').addEventListener('click', (e)=>{
+  createRipple(e);
+  sound.click();
+  document.getElementById('testSection').scrollIntoView({behavior:'smooth', block:'center'});
+  setTimeout(()=> hiddenInput.focus(), 500);
+});
+$('restartBtn').addEventListener('click', ()=>{ sound.click(); restartTest(); });
+$('modalRestartBtn').addEventListener('click', ()=>{ sound.click(); restartTest(); });
+$('modalClose').addEventListener('click', ()=>{ closeModal(); });
+$('modalCloseBtn').addEventListener('click', ()=>{ closeModal(); });
+modalOverlay.addEventListener('click', (e)=>{ if(e.target === modalOverlay) closeModal(); });
+
+function createRipple(e){
+  const btn = e.currentTarget;
+  const rect = btn.getBoundingClientRect();
+  const ripple = document.createElement('span');
+  ripple.className = 'ripple';
+  const size = Math.max(rect.width, rect.height);
+  ripple.style.width = ripple.style.height = size+'px';
+  ripple.style.left = (e.clientX - rect.left - size/2)+'px';
+  ripple.style.top = (e.clientY - rect.top - size/2)+'px';
+  btn.style.position = 'relative';
+  btn.appendChild(ripple);
+  setTimeout(()=> ripple.remove(), 650);
+}
+document.querySelectorAll('.btn-primary').forEach(b=> b.addEventListener('click', createRipple));
+
+/* Theme toggle */
+$('themeToggle').addEventListener('click', ()=>{
+  document.documentElement.classList.toggle('light');
+  const isLight = document.documentElement.classList.contains('light');
+  localStorage.setItem('velocity_theme', isLight ? 'light' : 'dark');
+  sound.click();
+});
+if(localStorage.getItem('velocity_theme') === 'light'){
+  document.documentElement.classList.add('light');
+}
+
+/* Sound toggle */
+$('soundToggle').addEventListener('click', ()=>{
+  state.soundOn = !state.soundOn;
+  $('soundIcon').style.opacity = state.soundOn ? '1' : '0.35';
+  if(state.soundOn) sound.click();
+});
+
+/* Fullscreen toggle */
+$('fullscreenToggle').addEventListener('click', ()=>{
+  if(!document.fullscreenElement){
+    document.documentElement.requestFullscreen().catch(()=>{});
+  } else {
+    document.exitFullscreen();
+  }
+  sound.click();
+});
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function init(){
+  loadParagraph();
+  const best = parseInt(localStorage.getItem('velocity_best_wpm') || '0', 10);
+  $('heroBestWpm').textContent = best;
+  resizeGraph();
+}
+init();
+
+})();
+</script>
+</body>
+</html>
